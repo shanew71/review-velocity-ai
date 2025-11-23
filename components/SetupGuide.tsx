@@ -52,7 +52,7 @@ const SetupGuide: React.FC = () => {
         <div className="bg-slate-50 p-4 rounded-md border border-slate-100 text-sm text-slate-700 space-y-2">
            <p>The "Client Tier" requires access to the Google Business Profile API.</p>
            <ul className="list-disc pl-5 space-y-2">
-             <li>In the Google Cloud Console, navigate to <strong>APIs & Services > Credentials</strong>.</li>
+             <li>In the Google Cloud Console, navigate to <strong>APIs & Services &gt; Credentials</strong>.</li>
              <li>Create an <strong>OAuth 2.0 Client ID</strong>.</li>
              <li>Set the authorized JavaScript origin to your production URL (e.g., https://your-app.vercel.app).</li>
              <li>Enable the <strong>Google Business Profile Performance API</strong> and <strong>My Business Account Management API</strong> in the Library.</li>
