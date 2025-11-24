@@ -3,7 +3,7 @@ import Widget from './Widget';
 import SetupGuide from './SetupGuide';
 import { DataService } from '../services/dataService';
 import { Tier, WidgetState, BusinessData, AnalysisResult } from '../types';
-import { Search, Lock, UserCheck, RefreshCw, BarChart, FileCode, Zap, Code, Globe, Bot } from 'lucide-react';
+import { Search, Lock, UserCheck, RefreshCw, BarChart, FileCode, Zap, Code, Globe, Bot, MapPin } from 'lucide-react';
 
 const dataService = new DataService();
 
@@ -11,6 +11,7 @@ const Dashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'generator' | 'docs'>('generator');
   
   // App State
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [businessId, setBusinessId] = useState<string>('b1');
   const [tier, setTier] = useState<Tier>('PROSPECT');
   const [state, setState] = useState<WidgetState>({
@@ -22,19 +23,23 @@ const Dashboard: React.FC = () => {
     error: null,
   });
 
-  const loadData = useCallback(async (forceRefresh = false) => {
+  // Load Data Logic
+  const loadData = useCallback(async (forceRefresh = false, customQuery = '') => {
     setState(prev => ({ ...prev, loading: true, error: null }));
     try {
       if (forceRefresh) dataService.clearCache();
       
-      const { data, analysis } = await dataService.getWidgetData(businessId, tier);
+      // Pass the custom search query if provided
+      const queryToUse = customQuery || (businessId === 'b1' || businessId === 'b2' ? '' : businessId);
+      
+      const { data, analysis } = await dataService.getWidgetData(businessId, tier, queryToUse);
       
       setState(prev => ({ 
         ...prev, 
         businessData: data, 
         analysis: analysis, 
         loading: false,
-        analyzing: !analysis // If no analysis in cache, we need to run it
+        analyzing: !analysis && !!data // If no analysis in cache but we have data, we need to run it
       }));
 
       // If missing analysis, run it now
@@ -43,6 +48,7 @@ const Dashboard: React.FC = () => {
       }
 
     } catch (err) {
+      console.error(err);
       setState(prev => ({ ...prev, loading: false, error: 'Failed to load business data.' }));
     }
   }, [businessId, tier]);
@@ -56,23 +62,33 @@ const Dashboard: React.FC = () => {
       }
   };
 
+  // Handle manual search submission
+  const handleSearch = (e: React.FormEvent) => {
+      e.preventDefault();
+      if(searchQuery.trim()) {
+          setBusinessId(searchQuery); // Use the query as the ID for now
+          loadData(true, searchQuery);
+      }
+  };
+
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    // Initial load with default mock
+    if(businessId === 'b1' || businessId === 'b2') {
+        loadData();
+    }
+  }, [loadData]); // Removing businessId from deps to prevent double-fire on manual search
 
   // Handler for Auth Simulation
   const handleClientAuth = () => {
-    // Simulating OAuth flow delay
     const win = window.open('', '_blank', 'width=500,height=600');
     if(win) {
         win.document.write('<h1>Connecting to Google Business Profile...</h1><p>Please wait...</p>');
         setTimeout(() => {
             win.close();
-            setTier('CLIENT'); // Switch tier
-            // Force reload data to get the 25 reviews limit
+            setTier('CLIENT'); 
             setTimeout(() => {
-                dataService.clearCache(); // Clear prospect cache to force fresh client fetch
-                setBusinessId(prev => prev); // Trigger re-render/fetch logic if needed, but setState handles it via deps
+                dataService.clearCache(); 
+                loadData(true);
             }, 500);
         }, 1500);
     }
@@ -121,23 +137,50 @@ const Dashboard: React.FC = () => {
                 {/* Search / Select Business */}
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
                   <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Target Business</h3>
+                  
+                  {/* Manual Search Input */}
+                  <form onSubmit={handleSearch} className="mb-4">
+                      <label className="block text-xs text-slate-500 mb-1">Search Google Maps</label>
+                      <div className="relative flex gap-2">
+                        <input 
+                            type="text" 
+                            placeholder="e.g. Joe's Pizza, New York"
+                            className="flex-grow pl-3 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                        <button type="submit" className="p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                            <Search className="w-4 h-4" />
+                        </button>
+                      </div>
+                  </form>
+
                   <div className="relative">
-                    <Search className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+                    <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-slate-100"></div>
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-white px-2 text-slate-400">Or select demo</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 relative">
+                    <MapPin className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
                     <select 
-                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none appearance-none"
+                      className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none appearance-none"
                       value={businessId}
                       onChange={(e) => {
                           setBusinessId(e.target.value);
-                          setTier('PROSPECT'); // Reset to prospect on change
+                          setSearchQuery(''); // Clear search if picking demo
+                          setTier('PROSPECT'); 
+                          // Immediate reload for demo selection
+                          setTimeout(() => loadData(false, ''), 0);
                       }}
                     >
-                      <option value="b1">Apex Coffee Roasters (Demo)</option>
-                      <option value="b2">Modern Dental Studio (Demo)</option>
+                      <option value="b1">Apex Coffee Roasters (Mock)</option>
+                      <option value="b2">Modern Dental Studio (Mock)</option>
                     </select>
                   </div>
-                  <p className="text-xs text-slate-500 mt-2">
-                    Connects to Google Business Profile API for live data.
-                  </p>
                 </div>
 
                 {/* Tier Selection */}
@@ -191,10 +234,7 @@ const Dashboard: React.FC = () => {
                 >
                   <RefreshCw className="w-4 h-4" /> Regenerate Analysis
                 </button>
-                <p className="text-xs text-center text-slate-400">
-                  Triggers fresh Gemini API sentiment analysis.
-                </p>
-
+                
               </div>
 
               {/* Right Panel: Widget Preview */}
@@ -238,7 +278,7 @@ const Dashboard: React.FC = () => {
                       <button className="text-slate-400 hover:text-white" onClick={() => alert("Copied to clipboard!")}>Copy</button>
                    </div>
                    <code>
-                     {`<div id="rv-widget" data-business="${businessId}"></div>
+                     {`<div id="rv-widget" data-business="${businessId || 'demo'}"></div>
 <script src="https://cdn.reviewvelocity.com/universal-widget.js"></script>`}
                    </code>
                  </div>
