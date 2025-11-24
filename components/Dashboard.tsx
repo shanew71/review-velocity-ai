@@ -3,7 +3,7 @@ import Widget from './Widget';
 import SetupGuide from './SetupGuide';
 import { DataService } from '../services/dataService';
 import { Tier, WidgetState, BusinessData, AnalysisResult } from '../types';
-import { Search, Lock, UserCheck, RefreshCw, BarChart, FileCode, Zap, Code, Globe, Bot, MapPin } from 'lucide-react';
+import { Search, Lock, UserCheck, RefreshCw, BarChart, FileCode, Zap, Code, Globe, Bot, MapPin, Key } from 'lucide-react';
 
 const dataService = new DataService();
 
@@ -12,6 +12,7 @@ const Dashboard: React.FC = () => {
   
   // App State
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [mapsApiKey, setMapsApiKey] = useState<string>(''); // New State for Maps Key
   const [businessId, setBusinessId] = useState<string>('b1');
   const [tier, setTier] = useState<Tier>('PROSPECT');
   const [state, setState] = useState<WidgetState>({
@@ -29,20 +30,19 @@ const Dashboard: React.FC = () => {
     try {
       if (forceRefresh) dataService.clearCache();
       
-      // Pass the custom search query if provided
       const queryToUse = customQuery || (businessId === 'b1' || businessId === 'b2' ? '' : businessId);
       
-      const { data, analysis } = await dataService.getWidgetData(businessId, tier, queryToUse);
+      // Pass the mapsApiKey to the service
+      const { data, analysis } = await dataService.getWidgetData(businessId, tier, queryToUse, mapsApiKey);
       
       setState(prev => ({ 
         ...prev, 
         businessData: data, 
         analysis: analysis, 
         loading: false,
-        analyzing: !analysis && !!data // If no analysis in cache but we have data, we need to run it
+        analyzing: !analysis && !!data
       }));
 
-      // If missing analysis, run it now
       if (!analysis && data) {
          runAI(data, tier);
       }
@@ -51,7 +51,7 @@ const Dashboard: React.FC = () => {
       console.error(err);
       setState(prev => ({ ...prev, loading: false, error: 'Failed to load business data.' }));
     }
-  }, [businessId, tier]);
+  }, [businessId, tier, mapsApiKey]);
 
   const runAI = async (data: BusinessData, currentTier: Tier) => {
       try {
@@ -62,23 +62,20 @@ const Dashboard: React.FC = () => {
       }
   };
 
-  // Handle manual search submission
   const handleSearch = (e: React.FormEvent) => {
       e.preventDefault();
       if(searchQuery.trim()) {
-          setBusinessId(searchQuery); // Use the query as the ID for now
+          setBusinessId(searchQuery);
           loadData(true, searchQuery);
       }
   };
 
   useEffect(() => {
-    // Initial load with default mock
     if(businessId === 'b1' || businessId === 'b2') {
         loadData();
     }
-  }, [loadData]); // Removing businessId from deps to prevent double-fire on manual search
+  }, [loadData]);
 
-  // Handler for Auth Simulation
   const handleClientAuth = () => {
     const win = window.open('', '_blank', 'width=500,height=600');
     if(win) {
@@ -96,7 +93,6 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      {/* Top Navigation */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex justify-between items-center">
           <div className="flex items-center gap-2">
@@ -122,7 +118,6 @@ const Dashboard: React.FC = () => {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="flex-grow p-8">
         <div className="max-w-7xl mx-auto">
           
@@ -131,14 +126,11 @@ const Dashboard: React.FC = () => {
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
               
-              {/* Left Panel: Controls */}
               <div className="lg:col-span-4 space-y-6">
                 
-                {/* Search / Select Business */}
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
                   <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Target Business</h3>
                   
-                  {/* Manual Search Input */}
                   <form onSubmit={handleSearch} className="mb-4">
                       <label className="block text-xs text-slate-500 mb-1">Search Google Maps</label>
                       <div className="relative flex gap-2">
@@ -154,6 +146,23 @@ const Dashboard: React.FC = () => {
                         </button>
                       </div>
                   </form>
+
+                  {/* TEMPORARY API KEY INPUT FOR PREVIEW MODE */}
+                  <div className="mb-4 bg-yellow-50 p-3 rounded-md border border-yellow-100">
+                      <label className="block text-xs text-yellow-800 font-bold mb-1 flex items-center gap-1">
+                          <Key className="w-3 h-3" /> Google Maps API Key (Required for Search)
+                      </label>
+                      <input 
+                          type="password" 
+                          placeholder="Paste AIza... key here"
+                          className="w-full px-3 py-1.5 bg-white border border-yellow-200 rounded text-xs text-slate-700 focus:outline-none"
+                          value={mapsApiKey}
+                          onChange={(e) => setMapsApiKey(e.target.value)}
+                      />
+                      <p className="text-[10px] text-yellow-600 mt-1">
+                          Required because "Preview Window" cannot access your local .env file.
+                      </p>
+                  </div>
 
                   <div className="relative">
                     <div className="absolute inset-0 flex items-center">
@@ -171,9 +180,8 @@ const Dashboard: React.FC = () => {
                       value={businessId}
                       onChange={(e) => {
                           setBusinessId(e.target.value);
-                          setSearchQuery(''); // Clear search if picking demo
+                          setSearchQuery(''); 
                           setTier('PROSPECT'); 
-                          // Immediate reload for demo selection
                           setTimeout(() => loadData(false, ''), 0);
                       }}
                     >
@@ -183,12 +191,10 @@ const Dashboard: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Tier Selection */}
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
                   <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Access Tier</h3>
                   
                   <div className="space-y-3">
-                    {/* Prospect Mode */}
                     <div 
                       className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${tier === 'PROSPECT' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-100 hover:border-slate-200'}`}
                       onClick={() => setTier('PROSPECT')}
@@ -201,7 +207,6 @@ const Dashboard: React.FC = () => {
                       {tier === 'PROSPECT' && <div className="w-2 h-2 rounded-full bg-indigo-600"></div>}
                     </div>
 
-                    {/* Client Mode */}
                     <div 
                       className={`p-4 rounded-lg border-2 transition-all ${tier === 'CLIENT' ? 'border-green-500 bg-green-50' : 'border-slate-100'}`}
                     >
@@ -227,7 +232,6 @@ const Dashboard: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Actions */}
                 <button 
                   onClick={() => loadData(true)}
                   className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
@@ -237,7 +241,6 @@ const Dashboard: React.FC = () => {
                 
               </div>
 
-              {/* Right Panel: Widget Preview */}
               <div className="lg:col-span-8 flex flex-col items-center">
                  <div className="w-full flex justify-between items-center mb-4 px-2">
                     <div>
