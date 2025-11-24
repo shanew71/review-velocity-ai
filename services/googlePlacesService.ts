@@ -37,7 +37,7 @@ export class GooglePlacesService {
 
       if (!response.ok) {
           const err = await response.text();
-          console.error("Google Places API Error:", err);
+          console.error(`Google Places Search Error (${response.status}):`, err);
           return null;
       }
 
@@ -67,7 +67,11 @@ export class GooglePlacesService {
         }
       });
 
-      if (!response.ok) return null;
+      if (!response.ok) {
+          const err = await response.text();
+          console.error(`Google Places Details Error (${response.status}):`, err);
+          return null;
+      }
 
       const data = await response.json();
       
