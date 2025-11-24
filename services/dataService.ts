@@ -46,9 +46,22 @@ export class DataService {
     
     // If custom query AND api key present (or environment has it)
     if (customQuery) {
-        console.log(`Searching Google Places for: ${customQuery}`);
+        console.log(`Processing Query: ${customQuery}`);
         
-        const resourceName = await this.placesService.searchPlaceId(customQuery, apiKey);
+        let resourceName: string | null = null;
+
+        // SMART DETECTION: Check if input looks like a Place ID (Starts with ChIJ and no spaces)
+        // Example ID: ChIJN1t_tDeuEmsRUsoyG83frY4
+        if (customQuery.startsWith('ChIJ') && !customQuery.includes(' ')) {
+             console.log("Detected Place ID format. Fetching directly...");
+             resourceName = `places/${customQuery}`;
+        } else if (customQuery.startsWith('places/')) {
+             resourceName = customQuery;
+        } else {
+             // Fallback to Text Search
+             console.log("Detected Text Search. Querying API...");
+             resourceName = await this.placesService.searchPlaceId(customQuery, apiKey);
+        }
         
         if (resourceName) {
             const realData = await this.placesService.getPlaceDetails(resourceName, apiKey);
