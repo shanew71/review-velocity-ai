@@ -189,7 +189,11 @@ const Widget: React.FC<WidgetProps> = ({ data, analysis, loading, analyzing, tie
                <span className="text-[10px] font-semibold text-green-600 leading-none">
                  Trending Up
                </span>
-               <svg width="12" height="6" viewBox="0 0 24 12" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-green-500 shrink-0 animate-pulse">
+               <svg 
+                 width="12" height="6" viewBox="0 0 24 12" fill="none" xmlns="http://www.w3.org/2000/svg" 
+                 className="text-green-500 shrink-0"
+                 style={{ animation: 'pulse-fade 2s infinite' }}
+               >
                  <path d="M1 10L6 6L10 9L15 4L23 1" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
                </svg>
            </div>
@@ -197,8 +201,41 @@ const Widget: React.FC<WidgetProps> = ({ data, analysis, loading, analyzing, tie
 
       </div>
 
-      {/* ROW 4: INSIGHTS GRID (In Demand 1/2, Recent Mentions 1/2) */}
-      <div className="px-2 py-4 border-b border-slate-100 bg-slate-50 grid grid-cols-1 sm:grid-cols-2 sm:divide-x divide-slate-200 gap-4 sm:gap-0">
+      {/* ROW 4: AI SUMMARY (Now moved above grid) */}
+      <div className="px-6 py-5 bg-white relative flex-grow border-b border-slate-100">
+        <div className="flex justify-between items-center mb-3">
+           <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+             <Bot className="w-4 h-4 text-indigo-600" />
+             AI Summary of Reputation
+           </h3>
+           {tier === 'PROSPECT' && (
+            <span className="text-[9px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">
+              PUBLIC DATA
+            </span>
+           )}
+        </div>
+        
+        {analyzing ? (
+           <div className="space-y-2 animate-pulse mt-2">
+             <div className="h-3 bg-slate-100 rounded w-full"></div>
+             <div className="h-3 bg-slate-100 rounded w-5/6"></div>
+             <div className="h-3 bg-slate-100 rounded w-4/6"></div>
+           </div>
+        ) : analysis ? (
+          <div className="">
+            <p className="text-sm text-slate-600 leading-relaxed italic border-l-2 border-indigo-200 pl-3 py-1">
+              "{analysis.summary}"
+            </p>
+          </div>
+        ) : (
+          <div className="text-center py-4 text-sm text-slate-400">
+             Waiting for analysis...
+          </div>
+        )}
+      </div>
+
+      {/* ROW 5: INSIGHTS GRID (In Demand 1/2, Recent Mentions 1/2) */}
+      <div className="px-2 py-4 bg-slate-50 grid grid-cols-1 sm:grid-cols-2 sm:divide-x divide-slate-200 gap-4 sm:gap-0">
         
         {/* Col 1: In Demand */}
         <div className="flex flex-col px-2 justify-start pt-1 h-full">
@@ -246,41 +283,8 @@ const Widget: React.FC<WidgetProps> = ({ data, analysis, loading, analyzing, tie
 
       </div>
 
-      {/* ROW 5: AI SUMMARY */}
-      <div className="px-6 py-5 bg-white relative flex-grow">
-        <div className="flex justify-between items-center mb-3">
-           <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-             <Bot className="w-4 h-4 text-indigo-600" />
-             AI Summary of Reputation
-           </h3>
-           {tier === 'PROSPECT' && (
-            <span className="text-[9px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">
-              PUBLIC DATA
-            </span>
-           )}
-        </div>
-        
-        {analyzing ? (
-           <div className="space-y-2 animate-pulse mt-2">
-             <div className="h-3 bg-slate-100 rounded w-full"></div>
-             <div className="h-3 bg-slate-100 rounded w-5/6"></div>
-             <div className="h-3 bg-slate-100 rounded w-4/6"></div>
-           </div>
-        ) : analysis ? (
-          <div className="">
-            <p className="text-sm text-slate-600 leading-relaxed italic border-l-2 border-indigo-200 pl-3 py-1">
-              "{analysis.summary}"
-            </p>
-          </div>
-        ) : (
-          <div className="text-center py-4 text-sm text-slate-400">
-             Waiting for analysis...
-          </div>
-        )}
-      </div>
-
       {/* FOOTER */}
-      <div className="bg-slate-900 px-6 py-3 flex justify-between items-center text-[10px] text-slate-400 border-t border-slate-800">
+      <div className="bg-slate-900 px-6 py-3 flex justify-between items-center text-[10px] text-slate-400 border-t border-slate-800 rounded-b-xl">
         <div className="flex items-center gap-1">
           <span>Powered by</span>
           <a href="https://reviewvelocity.ai" target="_blank" rel="noopener noreferrer" className="font-bold text-white hover:text-indigo-400 transition-colors">ReviewVelocity.AI</a>
