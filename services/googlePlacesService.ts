@@ -1,35 +1,24 @@
 import { BusinessData, Review } from '../types';
 
-// Defines the structure of the raw Google Places API response
-interface GooglePlaceResult {
-  place_id: string;
-  name: string;
-  formatted_address: string;
-  rating: number;
-  user_ratings_total: number;
-  reviews?: {
-    author_name: string;
-    rating: number;
-    text: string;
-    time: number; // Unix timestamp
-    relative_time_description: string;
-  }[];
-}
-
 export class GooglePlacesService {
-  private apiKey: string;
+  private envApiKey: string;
   private baseUrl = 'https://places.googleapis.com/v1/places';
 
   constructor() {
-    // Access the API key from environment variables
-    // Use VITE_ prefix for client-side access in Vite
-    this.apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || process.env.VITE_GOOGLE_MAPS_API_KEY || ''; 
+    // Fallback to environment variable if available
+    this.envApiKey = process.env.VITE_GOOGLE_MAPS_API_KEY || ''; 
   }
 
-  // Step 1: Find the Place ID from a text query (e.g. "Joe's Pizza NYC")
-  async searchPlaceId(query: string): Promise<string | null> {
-    if (!this.apiKey) {
-        console.warn("Google Maps API Key missing. Returning null.");
+  private getApiKey(overrideKey?: string): string {
+      return overrideKey || this.envApiKey;
+  }
+
+  // Step 1: Find the Place ID from a text query
+  async searchPlaceId(query: string, apiKey?: string): Promise<string | null> {
+    const key = this.getApiKey(apiKey);
+    
+    if (!key) {
+        console.warn("Google Maps API Key missing. Cannot search.");
         return null;
     }
 
@@ -38,7 +27,7 @@ export class GooglePlacesService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Goog-Api-Key': this.apiKey,
+          'X-Goog-Api-Key': key,
           'X-Goog-FieldMask': 'places.name,places.place_id,places.formattedAddress'
         },
         body: JSON.stringify({
@@ -46,9 +35,15 @@ export class GooglePlacesService {
         })
       });
 
+      if (!response.ok) {
+          const err = await response.text();
+          console.error("Google Places API Error:", err);
+          return null;
+      }
+
       const data = await response.json();
       if (data.places && data.places.length > 0) {
-        return data.places[0].name; // In new Places API, 'name' is the resource name like "places/PLACE_ID"
+        return data.places[0].name; // "places/PLACE_ID"
       }
       return null;
     } catch (error) {
@@ -57,29 +52,31 @@ export class GooglePlacesService {
     }
   }
 
-  // Step 2: Get Details (Reviews, Rating) using the Resource Name
-  async getPlaceDetails(resourceName: string): Promise<BusinessData | null> {
-    if (!this.apiKey) return null;
+  // Step 2: Get Details
+  async getPlaceDetails(resourceName: string, apiKey?: string): Promise<BusinessData | null> {
+    const key = this.getApiKey(apiKey);
+    if (!key) return null;
 
     try {
       const response = await fetch(`https://places.googleapis.com/v1/${resourceName}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'X-Goog-Api-Key': this.apiKey,
+          'X-Goog-Api-Key': key,
           'X-Goog-FieldMask': 'id,displayName,formattedAddress,rating,userRatingCount,reviews'
         }
       });
 
+      if (!response.ok) return null;
+
       const data = await response.json();
       
-      // Transform Google API format to our App's internal format
       const reviews: Review[] = (data.reviews || []).map((r: any, index: number) => ({
         id: `g-rev-${index}`,
         author: r.authorAttribution?.displayName || 'Google User',
         rating: r.rating,
         text: r.text?.text || '',
-        date: r.publishTime || new Date().toISOString(), // Use publishTime if available
+        date: r.publishTime || new Date().toISOString(),
         platform: 'Google'
       }));
 
@@ -91,7 +88,7 @@ export class GooglePlacesService {
         averageRating: data.rating || 0,
         reviews: reviews,
         lastReviewDate: reviews.length > 0 ? reviews[0].date : new Date().toISOString(),
-        knownProductsOrServices: [] // We will let the AI infer this from reviews since Places API doesn't easily give a menu
+        knownProductsOrServices: [] 
       };
 
     } catch (error) {
