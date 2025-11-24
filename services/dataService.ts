@@ -42,36 +42,31 @@ export class DataService {
     this.placesService = new GooglePlacesService();
   }
 
-  // Simulates fetching fresh data from Google Business Profile or Places API
-  async fetchBusinessData(businessId: string, tier: Tier, customQuery: string = ''): Promise<BusinessData> {
+  async fetchBusinessData(businessId: string, tier: Tier, customQuery: string = '', apiKey: string = ''): Promise<BusinessData> {
     
-    // If a custom search query is provided (Real Data Mode)
+    // If custom query AND api key present (or environment has it)
     if (customQuery) {
         console.log(`Searching Google Places for: ${customQuery}`);
         
-        // 1. Find Place ID
-        const resourceName = await this.placesService.searchPlaceId(customQuery);
+        const resourceName = await this.placesService.searchPlaceId(customQuery, apiKey);
         
-        // 2. Get Details if found
         if (resourceName) {
-            const realData = await this.placesService.getPlaceDetails(resourceName);
+            const realData = await this.placesService.getPlaceDetails(resourceName, apiKey);
             if (realData) {
                 return realData;
             }
         }
-        console.warn("Google Places lookup failed or returned no results. Falling back to mock.");
+        console.warn("Google Places lookup failed. Falling back to mock.");
     }
 
-    // FALLBACK / DEMO MODE
-    await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate latency
-
+    // FALLBACK MOCK
+    await new Promise(resolve => setTimeout(resolve, 1000)); 
     const isClient = tier === 'CLIENT';
-    const reviewCount = isClient ? 124 : 45; 
     
     // Find mock definition or create generic one from ID
     const mockDef = MOCK_BUSINESSES.find(b => b.id === businessId) || {
         id: businessId,
-        name: businessId === 'b1' || businessId === 'b2' ? 'Demo Business' : businessId, // Handle custom text fallback
+        name: businessId === 'b1' || businessId === 'b2' ? 'Demo Business' : businessId,
         address: '123 Main St',
         avgRating: 4.5,
         count: 100,
@@ -84,7 +79,7 @@ export class DataService {
       id: businessId,
       name: mockDef.name,
       address: mockDef.address,
-      totalReviews: reviewCount,
+      totalReviews: isClient ? 120 : 45,
       averageRating: mockDef.avgRating,
       reviews: mockReviews,
       lastReviewDate: new Date().toISOString(),
@@ -92,12 +87,11 @@ export class DataService {
     };
   }
 
-  // Handles the Caching Logic: 24h for Metrics, 7d for AI
-  async getWidgetData(businessId: string, tier: Tier, customQuery: string = ''): Promise<{ data: BusinessData, analysis: AnalysisResult | null }> {
-    const storageKeyMetrics = `${CACHE_KEYS.BUSINESS_DATA}_${businessId}`;
+  async getWidgetData(businessId: string, tier: Tier, customQuery: string = '', apiKey: string = ''): Promise<{ data: BusinessData, analysis: AnalysisResult | null }> {
+    // Cache key includes customQuery to differentiate searches
+    const storageKeyMetrics = `${CACHE_KEYS.BUSINESS_DATA}_${businessId}_${customQuery}`;
     const storageKeyAI = `${CACHE_KEYS.AI_ANALYSIS}_${businessId}_${tier}`; 
     
-    // 1. Check Metrics Cache
     const cachedMetricsJson = localStorage.getItem(storageKeyMetrics);
     let businessData: BusinessData | null = null;
     
@@ -108,16 +102,14 @@ export class DataService {
       }
     }
 
-    // If no valid cache, fetch fresh
     if (!businessData) {
-      businessData = await this.fetchBusinessData(businessId, tier, customQuery);
+      businessData = await this.fetchBusinessData(businessId, tier, customQuery, apiKey);
       localStorage.setItem(storageKeyMetrics, JSON.stringify({
         timestamp: Date.now(),
         data: businessData
       }));
     }
 
-    // 2. Check AI Cache
     const cachedAIJson = localStorage.getItem(storageKeyAI);
     let analysis: AnalysisResult | null = null;
 
