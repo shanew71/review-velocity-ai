@@ -344,6 +344,7 @@ const Dashboard: React.FC = () => {
                       loading={state.loading}
                       analyzing={state.analyzing}
                       tier={tier}
+                      error={state.error}
                     />
                  </div>
                  
