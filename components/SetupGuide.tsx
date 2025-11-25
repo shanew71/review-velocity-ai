@@ -20,7 +20,7 @@ const SetupGuide: React.FC = () => {
           <p>You need a single Google Cloud Project to power both the Maps data and the AI intelligence.</p>
           <ol className="list-decimal pl-5 space-y-2">
             <li>Go to the <a href="https://console.cloud.google.com/" target="_blank" className="text-indigo-600 font-medium hover:underline">Google Cloud Console</a>.</li>
-            <li>Click <strong>Select a project</strong> > <strong>New Project</strong>. Name it "Agency Engine" and click Create.</li>
+            <li>Click <strong>Select a project</strong> &gt; <strong>New Project</strong>. Name it "Agency Engine" and click Create.</li>
             <li><strong>Enable Billing:</strong> A billing account is required for the Maps API (even for the free tier). Go to <strong>Billing</strong> in the menu and link a credit card.</li>
           </ol>
         </div>
@@ -56,7 +56,7 @@ const SetupGuide: React.FC = () => {
         <div className="ml-11 bg-slate-50 p-5 rounded-lg border border-slate-200 text-sm space-y-4">
            <div>
              <h4 className="font-bold text-slate-900 mb-1">Key #1: The Master Key</h4>
-             <p className="text-slate-600 mb-2">Go to <strong>Credentials</strong> > <strong>Create Credentials</strong> > <strong>API Key</strong>.</p>
+             <p className="text-slate-600 mb-2">Go to <strong>Credentials</strong> &gt; <strong>Create Credentials</strong> &gt; <strong>API Key</strong>.</p>
              <p className="text-slate-600">Copy this string. You will use this single key for BOTH services in Vercel to keep things simple.</p>
            </div>
            
@@ -120,10 +120,10 @@ const SetupGuide: React.FC = () => {
              <div className="space-y-2 text-slate-600">
                <p>To enable the <strong>Connect Google Business Profile</strong> feature, you must configure the OAuth Consent Screen.</p>
                <ol className="list-decimal pl-5 space-y-2">
-                 <li>Go to <strong>APIs & Services</strong> > <strong>OAuth consent screen</strong>. Select "External" and fill in required fields (App Name, Email).</li>
+                 <li>Go to <strong>APIs & Services</strong> &gt; <strong>OAuth consent screen</strong>. Select "External" and fill in required fields (App Name, Email).</li>
                  <li>Add the scope: <code>https://www.googleapis.com/auth/business.manage</code> manually.</li>
                  <li>Add Test Users: Add your own email address to test it immediately.</li>
-                 <li>Go to <strong>Credentials</strong> > <strong>Create Credentials</strong> > <strong>OAuth Client ID</strong>.</li>
+                 <li>Go to <strong>Credentials</strong> &gt; <strong>Create Credentials</strong> &gt; <strong>OAuth Client ID</strong>.</li>
                  <li>Application Type: <strong>Web application</strong>.</li>
                  <li>
                    <strong>Authorized Javascript Origins:</strong> Add BOTH:
