@@ -72,10 +72,13 @@ export class GeminiService {
         }
       });
 
-      const text = response.text;
+      let text = response.text;
       if (!text) {
         throw new Error("Empty response from Gemini");
       }
+
+      // Sanitize Markdown code blocks if present
+      text = text.replace(/```json\n?|\n?```/g, "").trim();
 
       const result = JSON.parse(text);
 
