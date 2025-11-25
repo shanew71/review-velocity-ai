@@ -77,8 +77,16 @@ export class GeminiService {
         throw new Error("Empty response from Gemini");
       }
 
-      // Sanitize Markdown code blocks if present
-      text = text.replace(/```json\n?|\n?```/g, "").trim();
+      // Robust JSON Extraction: Find first '{' and last '}'
+      const firstBrace = text.indexOf('{');
+      const lastBrace = text.lastIndexOf('}');
+
+      if (firstBrace !== -1 && lastBrace !== -1) {
+        text = text.substring(firstBrace, lastBrace + 1);
+      } else {
+         // Fallback cleaning if braces aren't clear (unlikely with JSON schema but safe)
+         text = text.replace(/```json\n?|\n?```/g, "").trim();
+      }
 
       const result = JSON.parse(text);
 
