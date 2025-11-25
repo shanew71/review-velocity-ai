@@ -8,9 +8,10 @@ interface WidgetProps {
   loading: boolean;
   analyzing: boolean;
   tier: Tier;
+  error?: string | null;
 }
 
-const Widget: React.FC<WidgetProps> = ({ data, analysis, loading, analyzing, tier }) => {
+const Widget: React.FC<WidgetProps> = ({ data, analysis, loading, analyzing, tier, error }) => {
   if (loading) {
     return (
       <div className="w-full max-w-md mx-auto bg-white rounded-xl shadow-xl h-96 flex flex-col items-center justify-center animate-pulse border border-slate-200">
@@ -88,7 +89,12 @@ const Widget: React.FC<WidgetProps> = ({ data, analysis, loading, analyzing, tie
       ? analysis.loves
       : ['Professional Staff', 'Clean Office', 'Gentle Care', 'Modern Tech'];
   
-  const summaryToShow = analysis?.summary || "Analyzing recent customer reviews to generate reputation summary...";
+  let summaryToShow = "Analyzing recent customer reviews to generate reputation summary...";
+  if (analysis?.summary) {
+    summaryToShow = analysis.summary;
+  } else if (!analyzing && error) {
+    summaryToShow = "AI Analysis unavailable at this time.";
+  }
 
   // UNIVERSAL CODE: AI-Optimized Schema.org JSON-LD
   const schemaData = {
@@ -211,7 +217,7 @@ const Widget: React.FC<WidgetProps> = ({ data, analysis, loading, analyzing, tie
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">AI Summary of Reputation</h3>
           </div>
           <div className="pl-4 border-l-4 border-indigo-200">
-            <p className="text-sm text-slate-600 leading-relaxed italic">
+            <p className={`text-sm leading-relaxed italic ${!analyzing && error ? 'text-red-500' : 'text-slate-600'}`}>
                 "{summaryToShow}"
             </p>
           </div>
