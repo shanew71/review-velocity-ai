@@ -10,7 +10,8 @@ export class GooglePlacesService {
   }
 
   private getApiKey(overrideKey?: string): string {
-      return overrideKey || this.envApiKey;
+      // STRICT TRIM: Removes whitespace that causes Connection Failed errors
+      return (overrideKey || this.envApiKey || '').trim();
   }
 
   // Step 1: Find the Place ID from a text query
