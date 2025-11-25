@@ -3,7 +3,7 @@ import Widget from './Widget';
 import SetupGuide from './SetupGuide';
 import { DataService } from '../services/dataService';
 import { Tier, WidgetState, BusinessData, AnalysisResult } from '../types';
-import { Search, Lock, UserCheck, RefreshCw, BarChart, FileCode, Zap, Code, Globe, Bot, MapPin, Key, AlertTriangle, CheckCircle, Shield } from 'lucide-react';
+import { Search, Lock, UserCheck, RefreshCw, BarChart, FileCode, Zap, Code, Globe, Bot, MapPin, Key, AlertTriangle, CheckCircle, Shield, Terminal } from 'lucide-react';
 
 const dataService = new DataService();
 
@@ -27,6 +27,8 @@ const Dashboard: React.FC = () => {
 
   // OAuth State
   const [tokenClient, setTokenClient] = useState<any>(null);
+  const [showDevMode, setShowDevMode] = useState<boolean>(false);
+  const [manualToken, setManualToken] = useState<string>('');
 
   // Initialize Maps Key and Client ID from Env if available
   useEffect(() => {
@@ -48,13 +50,7 @@ const Dashboard: React.FC = () => {
           callback: (tokenResponse) => {
             console.log("OAuth Success:", tokenResponse);
             if (tokenResponse.access_token) {
-              // In a real backend scenario, we would send this token to our server.
-              // For this agency tool, we confirm auth and unlock the tier.
-              setTier('CLIENT');
-              setTimeout(() => {
-                dataService.clearCache();
-                loadData(true);
-              }, 500);
+              handleAuthSuccess(tokenResponse.access_token);
             }
           },
           error_callback: (err) => {
@@ -68,6 +64,16 @@ const Dashboard: React.FC = () => {
       }
     }
   }, [clientId]);
+
+  const handleAuthSuccess = (token: string) => {
+      // In a real backend scenario, we would send this token to our server.
+      // For this agency tool, we confirm auth and unlock the tier.
+      setTier('CLIENT');
+      setTimeout(() => {
+        dataService.clearCache();
+        loadData(true);
+      }, 500);
+  };
 
   // Load Data Logic
   const loadData = useCallback(async (forceRefresh = false, customQuery = '') => {
@@ -125,6 +131,14 @@ const Dashboard: React.FC = () => {
       tokenClient.requestAccessToken();
     } else {
       alert("Please enter a valid Google Client ID below to connect.");
+    }
+  };
+
+  const handleManualTokenSubmit = () => {
+    if (manualToken.length > 10) {
+      handleAuthSuccess(manualToken);
+    } else {
+      alert("Invalid Token");
     }
   };
 
@@ -283,7 +297,7 @@ const Dashboard: React.FC = () => {
                           </button>
                           
                           {/* Client ID Input for Production Auth */}
-                          {!tokenClient && (
+                          {!tokenClient && !showDevMode && (
                             <div className="pt-2 border-t border-slate-100">
                                 <label className="block text-[10px] text-slate-400 mb-1">OAuth Client ID (Required for Login)</label>
                                 <input 
@@ -295,6 +309,34 @@ const Dashboard: React.FC = () => {
                                 />
                             </div>
                           )}
+
+                          {/* Manual Token Override */}
+                          <div className="pt-2">
+                            <button 
+                              onClick={() => setShowDevMode(!showDevMode)}
+                              className="text-[10px] text-slate-400 underline hover:text-indigo-600 flex items-center gap-1"
+                            >
+                              <Terminal className="w-3 h-3" />
+                              {showDevMode ? 'Hide Developer Mode' : 'Developer: Enter Token Manually'}
+                            </button>
+                            
+                            {showDevMode && (
+                              <div className="mt-2 space-y-2">
+                                <textarea
+                                  placeholder="Paste OAuth Access Token here..."
+                                  className="w-full h-16 p-2 text-[10px] bg-slate-900 text-green-400 rounded border border-slate-700 focus:outline-none font-mono"
+                                  value={manualToken}
+                                  onChange={(e) => setManualToken(e.target.value)}
+                                />
+                                <button 
+                                  onClick={handleManualTokenSubmit}
+                                  className="w-full py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs rounded border border-slate-700"
+                                >
+                                  Inject Token & Unlock
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>
