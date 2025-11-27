@@ -6,21 +6,21 @@ export class GooglePlacesService {
 
   constructor() {
     // Fallback to environment variable if available
-    this.envApiKey = process.env.VITE_GOOGLE_MAPS_API_KEY || ''; 
+    this.envApiKey = process.env.VITE_GOOGLE_MAPS_API_KEY || '';
   }
 
   private getApiKey(overrideKey?: string): string {
-      // STRICT TRIM: Removes whitespace that causes Connection Failed errors
-      return (overrideKey || this.envApiKey || '').trim();
+    // STRICT TRIM: Removes whitespace AND quotes that cause Connection Failed errors
+    return (overrideKey || this.envApiKey || '').replace(/['"]/g, '').trim();
   }
 
   // Step 1: Find the Place ID from a text query
   async searchPlaceId(query: string, apiKey?: string): Promise<string | null> {
     const key = this.getApiKey(apiKey);
-    
+
     if (!key) {
-        console.warn("Google Maps API Key missing. Cannot search.");
-        return null;
+      console.warn("Google Maps API Key missing. Cannot search.");
+      return null;
     }
 
     try {
@@ -37,9 +37,9 @@ export class GooglePlacesService {
       });
 
       if (!response.ok) {
-          const err = await response.text();
-          console.error(`Google Places Search Error (${response.status}):`, err);
-          return null;
+        const err = await response.text();
+        console.error(`Google Places Search Error (${response.status}):`, err);
+        return null;
       }
 
       const data = await response.json();
@@ -63,9 +63,9 @@ export class GooglePlacesService {
       // resourceName comes in as "places/PLACE_ID" usually.
       // The API endpoint is https://places.googleapis.com/v1/{name}
       // So strictly we just need base v1 + resourceName
-      
+
       const url = `https://places.googleapis.com/v1/${resourceName}`;
-      
+
       const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -77,13 +77,13 @@ export class GooglePlacesService {
       });
 
       if (!response.ok) {
-          const err = await response.text();
-          console.error(`Google Places Details Error (${response.status}):`, err);
-          return null;
+        const err = await response.text();
+        console.error(`Google Places Details Error (${response.status}):`, err);
+        return null;
       }
 
       const data = await response.json();
-      
+
       const reviews: Review[] = (data.reviews || []).map((r: any, index: number) => ({
         id: `g-rev-${index}`,
         author: r.authorAttribution?.displayName || 'Google User',

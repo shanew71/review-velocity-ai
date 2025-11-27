@@ -4,10 +4,26 @@ import { Review, Tier, AnalysisResult } from '../types';
 export class GeminiService {
   private ai: GoogleGenAI;
   private modelId = 'gemini-2.5-flash';
+  private apiKey: string;
 
   constructor() {
     // The API key is injected from the environment
-    this.ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    // SANITIZATION: Strip quotes if user accidentally added them in .env
+    this.apiKey = (process.env.API_KEY || '').replace(/['"]/g, '').trim();
+
+    // DEBUG: Show what we're getting (first 10 chars only)
+    console.log('🔍 DEBUG - API_KEY received:', this.apiKey.substring(0, 10) + '...', 'Length:', this.apiKey.length);
+
+    if (!this.apiKey || this.apiKey === '') {
+      console.error('❌ GEMINI API KEY MISSING: The API_KEY environment variable is not set.');
+      throw new Error('Gemini API key is missing. Please add API_KEY to your .env.local file.');
+    }
+
+    if (!this.apiKey.startsWith('AIza')) {
+      console.warn('⚠️ GEMINI API KEY FORMAT WARNING: The API key may be invalid (should start with "AIza").');
+    }
+
+    this.ai = new GoogleGenAI({ apiKey: this.apiKey });
   }
 
   async analyzeReviews(businessName: string, reviews: Review[], knownServices: string[], tier: Tier): Promise<AnalysisResult> {
@@ -56,13 +72,13 @@ export class GeminiService {
             type: Type.OBJECT,
             properties: {
               summary: { type: Type.STRING, description: "2-3 sentence sentiment summary" },
-              services: { 
-                type: Type.ARRAY, 
+              services: {
+                type: Type.ARRAY,
                 items: { type: Type.STRING },
                 description: "Top 2-5 TANGIBLE services/products. Return fewer if data is weak."
               },
-              loves: { 
-                type: Type.ARRAY, 
+              loves: {
+                type: Type.ARRAY,
                 items: { type: Type.STRING },
                 description: "Top 2-5 attributes/vibes. Return fewer if data is weak."
               }
@@ -84,8 +100,8 @@ export class GeminiService {
       if (firstBrace !== -1 && lastBrace !== -1) {
         text = text.substring(firstBrace, lastBrace + 1);
       } else {
-         // Fallback cleaning if braces aren't clear (unlikely with JSON schema but safe)
-         text = text.replace(/```json\n?|\n?```/g, "").trim();
+        // Fallback cleaning if braces aren't clear (unlikely with JSON schema but safe)
+        text = text.replace(/```json\n?|\n?```/g, "").trim();
       }
 
       const result = JSON.parse(text);
@@ -99,7 +115,18 @@ export class GeminiService {
 
     } catch (error) {
       console.error("Gemini Analysis Failed:", error);
-      throw new Error("Failed to generate AI analysis.");
+
+      // Check if it's an API key error
+      if (error instanceof Error) {
+        if (error.message.includes('API key not valid') || error.message.includes('INVALID_ARGUMENT')) {
+          throw new Error('Invalid Gemini API key. Please check that API_KEY is correctly set in your .env.local file.');
+        }
+        if (error.message.includes('quota') || error.message.includes('RESOURCE_EXHAUSTED')) {
+          throw new Error('Gemini API quota exceeded. Please check your API key limits.');
+        }
+      }
+
+      throw new Error("Failed to generate AI analysis. Check console for details.");
     }
   }
 }
