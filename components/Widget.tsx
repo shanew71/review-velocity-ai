@@ -28,13 +28,6 @@ const Widget: React.FC<WidgetProps> = ({ data, analysis, loading, analyzing, tie
   const now = new Date();
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(now.getDate() - 30);
-
-  // DEBUG: Log the dates to see why count is wrong
-  console.log("📅 DEBUG VELOCITY CALCULATION:");
-  console.log("Now:", now.toISOString());
-  console.log("30 Days Ago:", thirtyDaysAgo.toISOString());
-  data.reviews.forEach(r => console.log(`Review Date: ${r.date} | Is Recent? ${new Date(r.date) > thirtyDaysAgo}`));
-
   const recentReviews = data.reviews.filter(r => new Date(r.date) > thirtyDaysAgo);
   const recentCount = recentReviews.length;
 
@@ -129,7 +122,7 @@ const Widget: React.FC<WidgetProps> = ({ data, analysis, loading, analyzing, tie
   };
 
   return (
-    <div className="w-full max-w-md mx-auto bg-white rounded-xl shadow-2xl overflow-hidden font-inter border border-slate-200 flex flex-col relative group" itemScope itemType="https://schema.org/LocalBusiness">
+    <div className="w-full max-w-[548px] mx-auto bg-white rounded-xl shadow-2xl overflow-hidden font-inter border border-slate-200 flex flex-col relative group" itemScope itemType="https://schema.org/LocalBusiness">
 
       {/* JSON-LD Injection for AI Crawlers */}
       <script type="application/ld+json">
@@ -167,7 +160,7 @@ const Widget: React.FC<WidgetProps> = ({ data, analysis, loading, analyzing, tie
 
       {/* ROW 2: BUSINESS NAME (Black, Bold, Full Width) */}
       <div className="bg-white px-6 pt-5 pb-1">
-        <h2 className="text-black font-bold text-2xl leading-tight tracking-tight truncate" itemProp="name">
+        <h2 className="text-black font-bold text-xl leading-tight tracking-tight truncate" itemProp="name">
           {data.name}
         </h2>
       </div>
